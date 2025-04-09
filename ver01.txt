@@ -1,0 +1,65 @@
+// INICIO DEL PROGRAMA
+INICIAR APLICATIVO
+    MOSTRAR "Bienvenido al sistema de diagnóstico de enfermedades transmitidas por mosquitos."
+
+    // Entrada de datos del paciente
+    MOSTRAR "Ingrese su nombre:"
+    LEER nombrePaciente
+
+    MOSTRAR "Ingrese su edad:"
+    LEER edadPaciente
+
+    MOSTRAR "Seleccione su sexo (Hombre/Mujer):"
+    LEER sexoPaciente
+
+    SI sexoPaciente = "Mujer" ENTONCES
+        MOSTRAR "¿Está embarazada? (SI/NO):"
+        LEER embarazadaPaciente
+    SINO
+        embarazadaPaciente ← "NO"
+    FIN SI
+
+    // Pregunta sobre región de residencia
+    MOSTRAR "¿En qué zona del Perú vive actualmente?"
+    MOSTRAR "1. Costa Norte"
+    MOSTRAR "2. Selva"
+    MOSTRAR "3. Selva Central"
+    MOSTRAR "4. Selva Tropical"
+    LEER zonaPaciente
+
+    // Pregunta sobre fruta consumida
+    MOSTRAR "¿Qué fruta consume con mayor frecuencia?"
+    MOSTRAR "1. Papaya"
+    MOSTRAR "2. Plátano"
+    MOSTRAR "3. Piña"
+    LEER frutaPaciente
+
+    // Pregunta sobre síntomas
+    MOSTRAR "¿Qué síntomas ha sentido últimamente? (Marque todos los que apliquen)"
+    MOSTRAR "1. Fiebre alta"
+    MOSTRAR "2. Dolor de ojos"
+    MOSTRAR "3. Dolor de huesos"
+    MOSTRAR "4. Conjuntivitis"
+    MOSTRAR "5. Dolor articular"
+    MOSTRAR "6. Hinchazón"
+    MOSTRAR "7. Fiebre leve"
+    LEER listaSintomasPaciente
+
+    // FLUJO DE DATOS HACIA EL MOTOR DE INFERENCIA
+    ENVIAR nombrePaciente, edadPaciente, sexoPaciente, embarazadaPaciente,
+           zonaPaciente, frutaPaciente, listaSintomasPaciente A MOTOR_PROLOG
+
+    // LLAMADA AL MOTOR DE INFERENCIA
+    enfermedadSospechada ← CONSULTAR_DIAGNOSTICO_EN_PROLOG(
+        edadPaciente, sexoPaciente, embarazadaPaciente,
+        zonaPaciente, frutaPaciente, listaSintomasPaciente
+    )
+
+    // RESPUESTA DEL DIAGNÓSTICO
+    SI enfermedadSospechada ≠ NULO ENTONCES
+        MOSTRAR "Estimado(a) ", nombrePaciente, ", usted podría tener: ", enfermedadSospechada
+    SINO
+        MOSTRAR "No se ha podido determinar una enfermedad con la información proporcionada."
+    FIN SI
+
+FINALIZAR APLICATIVO
