@@ -1,24 +1,37 @@
 :- use_module(library(pce)).
 :- consult('sistema_experto.pl').
 
-
 iniciar_diagnostico_gui :-
     new(D, dialog('Diagnóstico Médico')),
 
     % Campos de entrada
     send(D, append, new(Nombre, text_item(nombre))),
-    send(D, append, new(Edad, text_item(edad))),
+    
+    % Campo de edad, solo numérico
+    send(D, append, new(Edad, text_item(edad, ''))),
+    
     send(D, append, new(Sexo, menu(sexo, cycle))),
     send_list(Sexo, append, [hombre, mujer]),
+    
     send(D, append, new(Embarazo, menu(embarazo, cycle))),
     send_list(Embarazo, append, [si, no]),
-    send(D, append, new(Zona, text_item(zona))),
-    send(D, append, new(Fruta, text_item(fruta_favorita))),
 
-    send(D, append, new(Sintomas, text_item('Síntomas (coma separados)'))),
+    % Selección de Zona de residencia
+    send(D, append, new(Zona, menu(zona, cycle))),
+    send_list(Zona, append, ['selva', 'selva central', 'selva tropical', 'amazonia peruana', 'iquitos', 'ucayali']),
+    
+    % Selección de Frutas
+    send(D, append, new(Fruta, menu(fruta, cycle))),
+    send_list(Fruta, append, ['papaya', 'platano', 'naranja', 'mango', 'granadilla']),
 
-    send(D, append, new(Prueba, text_item('Plaquetas'))),
+    % Selección de Síntomas
+    send(D, append, new(Sintomas, menu(sintomas, cycle))),
+    send_list(Sintomas, append, [
+        fiebre_alta, dolor_ojos, dolor_huesos, erupcion_cutanea, 
+        fiebre_leve, conjuntivitis, dolor_articular, hinchazon
+    ]),
 
+    % Botón para realizar el diagnóstico
     send(D, append, button('Diagnosticar',
         message(@prolog, diagnosticar_desde_gui,
             Nombre?selection,
@@ -27,39 +40,49 @@ iniciar_diagnostico_gui :-
             Embarazo?selection,
             Zona?selection,
             Fruta?selection,
-            Sintomas?selection,
-            Prueba?selection
+            Sintomas?selection
         ))),
-    
+
     send(D, open).
 
-diagnosticar_desde_gui(Nombre, EdadStr, Sexo, Embarazo, Zona, Fruta, SintomasStr, PlaquetasStr) :-
+% Validar que la edad sea un número válido
+validar_edad(EdadStr) :-
     atom_string(EdadAtom, EdadStr),
     atom_number(EdadAtom, Edad),
-    atom_string(PlaquetasAtom, PlaquetasStr),
-    atom_number(PlaquetasAtom, Plaquetas),
-    atomic_list_concat(SintomaAtoms, ',', SintomasStr),
-    maplist(atom_string, SintomaList, SintomaAtoms),
+    Edad >= 0, Edad =< 120, !.  % Rango válido de edad
 
-    atom_string(NombreAtom, Nombre),
-    assertz(paciente(NombreAtom, Edad, Sexo, Embarazo, Zona, Fruta)),
-	assertz(historial(NombreAtom, [ninguno])),
-    assertz(prueba(NombreAtom, plaquetas, Plaquetas)),
-    forall(member(S, SintomaList), assertz(sintoma(NombreAtom, S))),
+validar_edad(_) :-
+    write('Edad no válida, debe ser un número entre 0 y 120.'), nl,
+    fail.
 
-    (   diagnostico_final(NombreAtom, Enfermedad),
-        mostrar_recomendacion(NombreAtom, Enfermedad, Tratamiento, Reco)
-    ->  atomic_list_concat([
-            'Diagnóstico: ', Enfermedad,
-            '\nTratamiento: ', Tratamiento,
-            '\nRecomendación: ', Reco
-        ], Mensaje),
-        new(D, dialog('Resultado del Diagnóstico')),
-        send(D, append, label(info, Mensaje)),
-        send(D, append, button(ok, message(D, destroy))),
-        send(D, open)
-    ;   new(D, dialog('Sin Diagnóstico')),
-        send(D, append, label(info, 'No se pudo determinar un diagnóstico con los datos ingresados.')),
-        send(D, append, button(ok, message(D, destroy))),
-        send(D, open)
+% Diagnóstico desde la GUI
+diagnosticar_desde_gui(Nombre, EdadStr, Sexo, Embarazo, Zona, Fruta, Sintoma) :-
+    % Validar la edad antes de continuar con el diagnóstico
+    (   validar_edad(EdadStr)
+    ->  atom_string(EdadAtom, EdadStr),
+        atom_number(EdadAtom, Edad),
+
+        % Realizar diagnóstico
+        (   diagnostico([Sintoma], Zona, Edad, Embarazada, Enfermedad)
+        ->  obtener_recomendacion(Enfermedad, Recomendacion),
+            tratamiento_seguro(Enfermedad, Embarazada, Tratamiento),
+            atomic_list_concat([Enfermedad, '\n', Tratamiento, '\n', Recomendacion], Mensaje),
+            mostrar_resultado(Mensaje)
+        ;   mostrar_error('No se pudo determinar el diagnóstico: Sintomas no coinciden.')
+        )
+    ;   mostrar_error('Edad no válida, debe ser un número entre 0 y 120.')
     ).
+
+% Mostrar resultado en una ventana
+mostrar_resultado(Mensaje) :-
+    new(D, dialog('Resultado del Diagnóstico')),
+    send(D, append, label(info, Mensaje)),
+    send(D, append, button(ok, message(D, destroy))),
+    send(D, open).
+
+% Mostrar error en caso de que el diagnóstico falle
+mostrar_error(Mensaje) :-
+    new(D, dialog('Error')),
+    send(D, append, label(info, Mensaje)),
+    send(D, append, button(ok, message(D, destroy))),
+    send(D, open).
