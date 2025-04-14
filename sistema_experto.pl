@@ -1,3 +1,10 @@
+:- dynamic paciente/6.
+:- dynamic sintoma/2.
+:- dynamic vive_en_zona_riesgo/1.
+:- dynamic historial/2.
+:- dynamic resultado_laboratorio/2.
+
+
 % Información del paciente
 paciente(nombre_juan, 25, hombre, no, 'selva', 'papaya').
 paciente(nombre_maria, 30, mujer, si, 'selva central', 'platano').
@@ -108,7 +115,7 @@ enfermedad_sospechosa(Paciente, chikungunya) :-
 % Diagnóstico ajustado por historial
 ajustar_diagnostico_por_historial(Paciente, Enfermedad) :-
     enfermedad_sospechosa(Paciente, Enfermedad),
-    historial(Paciente, Hist),
+    (historial(Paciente, Hist) -> true ; Hist = []),
     \+ (Enfermedad = chikungunya, member(artritis, Hist)).
 
 % Regla para mostrar recomendación segura
